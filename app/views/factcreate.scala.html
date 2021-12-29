@@ -1,0 +1,15 @@
+@import helper._
+@import models.FactCreateForm
+@(factCreateForm: Form[FactCreateForm])(implicit request: MessagesRequestHeader)
+
+@main("Update Your Knowledge") {
+  <h1>Create New Fact</h1>
+  @form(action = routes.FactController.formCreate) {
+    @inputText(factCreateForm("Title"))
+    @inputText(factCreateForm("Description"))
+    @CSRF.formField
+    <div class="buttons">
+      <input type="submit" value="Create">
+    </div>
+  }
+}

@@ -1,0 +1,9 @@
+@(year: Int, facts: Seq[Fact])
+
+@main("Update Your Knowledge") {
+    <h1>Updated information since @year</h1>
+    @for(fact <- facts) {
+        <p><strong>@fact.title</strong></p>
+        <p>@fact.description</p>
+    }
+}

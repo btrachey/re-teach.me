@@ -1,0 +1,15 @@
+@(year: Form[Int])(implicit request: MessagesRequestHeader)
+
+@import helper._
+
+@main("Update Your Knowledge") {
+  <h1>Welcome to Re-Teach Me</h1>
+  <p>Select the year you graduated from high school below to see information on things you may have learned in school that are now outdated.</p>
+  @form(routes.FactController.byYear) {
+    @select(year("year"), (1980 to 2020).map(i => (i.toString, i.toString)), Symbol("_showConstraints") -> false)
+    @CSRF.formField
+    <div class="buttons">
+      <input type="submit" value="Get Facts">
+    </div>
+  }
+}

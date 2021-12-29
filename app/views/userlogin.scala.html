@@ -1,0 +1,15 @@
+@import helper._
+@import models.LoginForm
+@(loginForm: Form[LoginForm])(implicit request: MessagesRequestHeader)
+
+@main("Update Your Knowledge") {
+  <h1>Log In</h1>
+  @form(action = routes.UserController.loginPost) {
+    @inputText(loginForm("Email"),Symbol("_showConstraints") -> false)
+    @inputPassword(loginForm("Password"))
+    @CSRF.formField
+    <div class="buttons">
+      <input type="submit" value="Login">
+    </div>
+  }
+}
