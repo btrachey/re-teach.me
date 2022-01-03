@@ -1,5 +1,8 @@
-@()
-
+@import controllers.security.AuthMessagesRequest
+@()(implicit request: AuthMessagesRequest[AnyContent])
 @main("Update Your Knowledge") {
-  <h1>Welcome to Re-Teach Me</h1>
+  <div class="container-fluid p-2 bg-primary text-white text-center">
+    <h1>Re-Teach Me</h1>
+    <p>Update your knowledge from high school!</p>
+  </div>
 }

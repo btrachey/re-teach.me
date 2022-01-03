@@ -1,10 +1,10 @@
 package controllers
 
-import models.ApprovalUser
-import javax.inject._
-import play.api._
+import controllers.security.AuthenticatedActionBuilder
 import play.api.mvc._
-import repositories.{SessionRepository, ApprovalUserRepository}
+import repositories.{SessionRepository, UserRepository}
+
+import javax.inject._
 import scala.concurrent.ExecutionContext
 
 /**
@@ -15,8 +15,9 @@ import scala.concurrent.ExecutionContext
 class HomeController @Inject()(
                                 implicit executionContext: ExecutionContext,
                                 val sessionRepository: SessionRepository,
-                                val userRepository: ApprovalUserRepository,
-                                val controllerComponents: ControllerComponents
+                                val userRepository: UserRepository,
+                                val controllerComponents: ControllerComponents,
+                                val authenticatedAction: AuthenticatedActionBuilder
                               ) extends BaseController {
 
   /**
@@ -26,17 +27,11 @@ class HomeController @Inject()(
    * will be called when the application receives a `GET` request with
    * a path of `/`.
    */
-  def index() = Action { implicit request: Request[AnyContent] =>
+  def index: Action[AnyContent] = authenticatedAction { implicit request =>
     Ok(views.html.index())
   }
 
-//  def priv() = Action { implicit request: Request[AnyContent] =>
-//    val userOpt = extractUser(request)
-//    userOpt.map
-//  }
-//
-//  private def extractUser(req: RequestHeader): Option[ApprovalUser] = {
-//    val sessionTokenOpt = req.session.get("sessionToken")
-//    sessionTokenOpt.map(token => sessionRepository.findByToken(token)).flatMap()
-//  }
+  def untrail(path: String): Action[AnyContent] = Action { implicit request =>
+    MovedPermanently("/" + path)
+  }
 }

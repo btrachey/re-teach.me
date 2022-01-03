@@ -29,18 +29,19 @@ class SessionRepository @Inject()(
       .one(BSONDocument("_id" -> id), copySession(session)))
 
   def findByToken(token: String): Future[Option[CustomSession]] = collection
-    .flatMap(_.find(BSONDocument("token" -> token), Option.empty[CustomSession]).one[CustomSession]).filter(_.exists(!_.isExpired))
+    .flatMap(_.find(BSONDocument("token" -> token), Option.empty[CustomSession]).one[CustomSession]).map(_.filter(!_.isExpired))
 
   def findByUser(email: String): Future[Option[CustomSession]] = collection
-    .flatMap(_.find(BSONDocument("email" -> email), Option.empty[CustomSession]).one[CustomSession])
+    .flatMap(_.find(BSONDocument("email" -> email), Option.empty[CustomSession]).one[CustomSession]).map(_.filter(!_.isExpired))
 
   def isValidToken(token: String): Future[Boolean] = findByToken(token)
     .map(_.exists(!_.isExpired))
 
   private def copySession(session: CustomSession): CustomSession = {
+    val expiration: Instant = Instant.now.plus(4, HOURS)
     session.copy(
-      token = Some(s"${session.email}-token-${UUID.randomUUID().toString}"),
-      expiration = Some(Instant.now.plus(4, HOURS))
+      token = Some(s"${session.email}:token:${UUID.randomUUID().toString}"),
+      expiration = Some(expiration)
     )
   }
 }

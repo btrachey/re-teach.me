@@ -1,15 +1,38 @@
-@(year: Form[Int])(implicit request: MessagesRequestHeader)
+@import controllers.security.AuthMessagesRequest
+@(year: Form[Int])(implicit request: AuthMessagesRequest[AnyContent])
 
 @import helper._
 
 @main("Update Your Knowledge") {
-  <h1>Welcome to Re-Teach Me</h1>
-  <p>Select the year you graduated from high school below to see information on things you may have learned in school that are now outdated.</p>
-  @form(routes.FactController.byYear) {
-    @select(year("year"), (1980 to 2020).map(i => (i.toString, i.toString)), Symbol("_showConstraints") -> false)
-    @CSRF.formField
-    <div class="buttons">
-      <input type="submit" value="Get Facts">
+  @if(request.flash.get("loginSuccess").isDefined) {
+    <div class="container-fluid fixed-top">
+    <div class="row justify-content-center">
+  <div class="alert alert-success alert-dismissible col-2" role="alert">
+    @request.flash.get("loginSuccess")
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"> </button>
+  </div>
+    </div>
     </div>
   }
+  <div class="container-fluid">
+    <div class="row justify-content-center">
+      <div class="col-4">
+        <figure class="text-center">
+  <h1>Welcome to Re-Teach Me</h1>
+  <p>Select the year you graduated from high school below to see information on things you may have learned in school that are now outdated.</p>
+        </figure>
+      </div>
+    </div>
+    <div class="row justify-content-center">
+      <div class="col-2">
+  @form(routes.FactController.byYear) {
+    @select(year("Year"), (1980 to 2020).map(i => (i.toString, i.toString)), Symbol("_showConstraints") -> false, Symbol("class") -> "form-control")
+    @CSRF.formField
+    <div class="buttons">
+      <input type="submit" class="btn btn-primary text-white" value="Get Facts">
+    </div>
+  }
+      </div>
+    </div>
+  </div>
 }

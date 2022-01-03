@@ -1,15 +1,22 @@
 @import helper._
 @import models.LoginForm
-@(loginForm: Form[LoginForm])(implicit request: MessagesRequestHeader)
+@import controllers.security.AuthMessagesRequest
+@(loginForm: Form[LoginForm])(implicit request: AuthMessagesRequest[AnyContent])
 
 @main("Update Your Knowledge") {
+  <div class="container-fluid">
+    <div class="row justify-content-center">
+      <div class="col-4">
   <h1>Log In</h1>
   @form(action = routes.UserController.loginPost) {
-    @inputText(loginForm("Email"),Symbol("_showConstraints") -> false)
-    @inputPassword(loginForm("Password"))
+    @inputText(loginForm("Email"),Symbol("_showConstraints") -> false, Symbol("class") -> "form-control")
+    @inputPassword(loginForm("Password"), Symbol("class") -> "form-control")
     @CSRF.formField
     <div class="buttons">
-      <input type="submit" value="Login">
+      <button type="submit" class="btn btn-primary text-white">Log In</button>
     </div>
   }
+      </div>
+    </div>
+  </div>
 }

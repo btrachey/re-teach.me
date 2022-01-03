@@ -1,6 +1,10 @@
-@(fact: Fact)
+@import controllers.security.AuthMessagesRequest
+@(fact: Fact)(implicit request: AuthMessagesRequest[AnyContent])
 
 @main("Update Your Knowledge") {
     <h1>@fact.title</h1>
     <p>@fact.description</p>
+    @if(request.flash.get("newFact").isDefined){
+        <p>This is a preview of your newly created fact. It will now go up for review, and if approved, will appear on the site.</p>
+    }
 }

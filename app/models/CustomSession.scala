@@ -6,22 +6,15 @@ import reactivemongo.bson._
 import java.time.Instant
 
 case class CustomSession(
-                    _id: Option[BSONObjectID],
-                    token: Option[String],
+                    _id: Option[BSONObjectID] = None,
+                    token: Option[String] = None,
                     email: String,
-                    expiration: Option[Instant]
+                    expiration: Option[Instant] = None
                   ) {
   def isExpired: Boolean = expiration.forall(_.isBefore(Instant.now))
 }
 
 object CustomSession extends HasBSONObjectID {
-  def apply(email: String): CustomSession = new CustomSession(
-    _id = None,
-    token = None,
-    email = email,
-    expiration = None
-  )
-
   implicit val fmt: Format[CustomSession] = Json.format[CustomSession]
 
   implicit object SessionBSONReader extends BSONDocumentReader[CustomSession] {

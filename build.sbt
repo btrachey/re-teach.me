@@ -4,7 +4,6 @@ organization := "com.brianwtracey"
 version := "1.0"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala, AshScriptPlugin)
-
 scalaVersion := "2.13.7"
 
 libraryDependencies += guice
@@ -18,6 +17,10 @@ libraryDependencies ++= Seq(
   "org.reactivemongo" %% "reactivemongo-bson-compat" % "0.20.13",
   // Provide JSON serialization for Joda-Time
   "com.typesafe.play" %% "play-json-joda" % "2.9.2",
+  // Bootstrap webjar
+  "org.webjars" % "bootstrap" % "5.1.1",
+  // Bootstrap forms
+  "com.adrianhurt" %% "play-bootstrap" % "1.6.1-P28-B4",
 )
 
 // allow docker to write to working directory of container

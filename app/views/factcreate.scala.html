@@ -1,8 +1,9 @@
 @import helper._
 @import models.FactCreateForm
-@(factCreateForm: Form[FactCreateForm])(implicit request: MessagesRequestHeader)
+@import controllers.security.AuthMessagesRequest
+@(factCreateForm: Form[FactCreateForm])(implicit request: AuthMessagesRequest[AnyContent])
 
-@main("Update Your Knowledge") {
+@main("Update Your Knowledge", Some(request.user)) {
   <h1>Create New Fact</h1>
   @form(action = routes.FactController.formCreate) {
     @inputText(factCreateForm("Title"))

@@ -2,12 +2,12 @@
   "AWSEBDockerrunVersion": "1",
   "Image":
     {
-      "Name": "914884994734.dkr.ecr.us-east-1.amazonaws.com/re-teach-me:1.4"
+      "Name": "914884994734.dkr.ecr.us-east-1.amazonaws.com/re-teach-me:latest"
     },
   "Ports": [
     {
       "ContainerPort": 9000
     }
   ],
-  "Entrypoint": "/opt/docker/bin/what-i-learned-wrong"
+  "Entrypoint": "/opt/docker/bin/re-teach-me"
 }

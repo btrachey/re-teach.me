@@ -1,12 +1,13 @@
 package controllers
 
-import models.{ApprovalUser, UserCreationForm, LoginForm, CustomSession}
+import controllers.security.AuthenticatedActionBuilder
+import models.{CustomSession, LoginForm, User, UserCreationForm}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import reactivemongo.api.bson.BSONObjectID
-import repositories.{ApprovalUserRepository, SessionRepository}
+import repositories.{SessionRepository, UserRepository}
 
 import javax.inject._
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,84 +16,89 @@ import scala.util.{Failure, Success}
 @Singleton
 class UserController @Inject()(
                                 implicit executionContext: ExecutionContext,
-                                val userRepository: ApprovalUserRepository,
+                                val userRepository: UserRepository,
                                 val sessionRepository: SessionRepository,
-                                val cc: MessagesControllerComponents
+                                val cc: MessagesControllerComponents,
+                                val authenticatedAction: AuthenticatedActionBuilder
                               ) extends MessagesAbstractController(cc) {
 
 
-    val userCreationForm: Form[UserCreationForm] = Form(
-      mapping(
-        "Email" -> email,
-        "Password" -> text,
-        "First Name" -> text,
-        "Middle Name" -> optional(text),
-        "Last Name" -> text
-      )(UserCreationForm.apply)(UserCreationForm.unapply)
-    )
+  val userCreationForm: Form[UserCreationForm] = Form(
+    mapping(
+      "Email" -> email,
+      "Password" -> text,
+      "First Name" -> text,
+      "Middle Name" -> optional(text),
+      "Last Name" -> text
+    )(UserCreationForm.apply)(UserCreationForm.unapply)
+  )
+  val userLoginForm: Form[LoginForm] = Form(
+    mapping(
+      "Email" -> email,
+      "Password" -> nonEmptyText
+    )(LoginForm.apply)(LoginForm.unapply)
+  )
 
-  def newUser: Action[AnyContent] = Action { implicit request =>
+  def newUser: Action[AnyContent] = authenticatedAction { implicit request =>
     Ok(views.html.adduser(userCreationForm))
   }
 
-  def newUserPost: Action[AnyContent] = Action.async { implicit request =>
+  def newUserPost: Action[AnyContent] = authenticatedAction.async { implicit request =>
     userCreationForm.bindFromRequest().fold(
       errorForm => Future.successful(BadRequest(views.html.adduser(errorForm))),
       formData => {
-        val user = ApprovalUser(formData)
+        val user = User(formData)
         userRepository
-          .createIfNew(user.copy(password = user.password.map(ApprovalUser.PwManager.hashPassword)))
+          .createIfNew(user.copy(password = user.password.map(User.PwManager.hashPassword)))
           .map(_.map(writeResult => Ok(s"Created user: $writeResult"))
             .getOrElse(Ok(views.html.adduser(userCreationForm.fill(formData)
-              .withError("Email","A user with this email address already exists")))))
+              .withError("Email", "A user with this email address already exists")))))
       }
     )
   }
 
-  val userLoginForm: Form[LoginForm] = Form(
-    mapping(
-      "Email" -> email,
-      "Password" -> text
-    )(LoginForm.apply)(LoginForm.unapply)
-  )
-
-  def login: Action[AnyContent] = Action { implicit request =>
+  def login: Action[AnyContent] = authenticatedAction { implicit request =>
     Ok(views.html.userlogin(userLoginForm))
   }
 
-  def loginPost: Action[AnyContent] = Action.async { implicit request =>
+  def loginPost: Action[AnyContent] = authenticatedAction.async { implicit request =>
     userLoginForm.bindFromRequest().fold(
       errorForm => Future.successful(BadRequest(views.html.userlogin(errorForm))),
       formData => {
         userRepository.findByEmail(formData.email)
-          .map(_.flatMap(foundUser =>
-            ApprovalUser.PwManager.checkPassword(formData.password, foundUser.password.get)))
-          .flatMap{
-            case Some(true) =>
-              val sessionInstance = sessionRepository.create(CustomSession(email = formData.email))
-                .flatMap(_ => sessionRepository.findByUser(formData.email))
-              sessionInstance.flatMap(_.map(ses => Future.successful(Redirect(routes.FactController.index())
-                .addingToSession("sessionToken" -> ses.token.get)))
-                .getOrElse(Future.successful(
-                  BadRequest(views.html.userlogin(userLoginForm.fill(formData)
-                    .withError("Password", "Unable to log in, please try again"))))))
+          .flatMap {
+            case Some(foundUser) => {
+              User.PwManager.checkPassword(formData.password, foundUser.password.get) match {
+                case Some(true) => {
+                  val sessionInstance = sessionRepository.findByUser(formData.email).flatMap {
+                    case Some(customSession) => Future.successful(Some(customSession))
+                    case None => sessionRepository.create(CustomSession(email = formData.email)).flatMap(_ => sessionRepository.findByUser(formData.email))
+                  }
+                  sessionInstance.flatMap(_.map(ses => Future.successful(Redirect(routes.FactController.index)
+                    .addingToSession("sessionToken" -> ses.token.get).flashing("loginSuccess" -> "Successfully Logged In")))
+                    .getOrElse(Future.successful(
+                      BadRequest(views.html.userlogin(userLoginForm.fill(formData)
+                        .withError("Password", "Unable to log in, please try again"))))))
+                }
 
-            case _ => Future.successful(
-              BadRequest(views.html.userlogin(userLoginForm.fill(formData)
-                .withError("Password", "Incorrect password"))))
-        }
+                case _ => Future.successful(
+                  BadRequest(views.html.userlogin(userLoginForm.fill(formData)
+                    .withError("Password", "Incorrect password"))))
+              }
+            }
+            case None => Future.successful(BadRequest(views.html.userlogin(userLoginForm.fill(formData).withError("Email", "User not found"))))
+          }
       }
     )
   }
 
-
-  def findAll(): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
+  def findAll(): Action[AnyContent] = authenticatedAction.async { implicit request =>
     userRepository.findAll().map {
       users => Ok(Json.toJson(users))
     }
   }
 
-  def findOne(id: String): Action[AnyContent] = Action.async { implicit request: Request[AnyContent] =>
+  def findOne(id: String): Action[AnyContent] = authenticatedAction.async { implicit request: Request[AnyContent] =>
     val objectIdTryResult = BSONObjectID.parse(id)
     objectIdTryResult match {
       case Success(objectId) => userRepository.findOne(objectId).map(user => Ok(Json.toJson(user)))
@@ -100,31 +106,4 @@ class UserController @Inject()(
     }
   }
 
-  def create(): Action[JsValue] = Action.async(controllerComponents.parsers.json) { implicit request =>
-    request.body.validate[ApprovalUser].fold(
-      _ => Future.successful(BadRequest("Cannot parse request body")),
-      user => userRepository.create(user).map(_ => Created(Json.toJson(user)))
-    )
-  }
-
-  def update(id: String): Action[JsValue] = Action.async(controllerComponents.parsers.json) { implicit request =>
-    request.body.validate[ApprovalUser].fold(
-      _ => Future.successful(BadRequest("Cannot parse request body")),
-      user => {
-        val objectIdTryResult = BSONObjectID.parse(id)
-        objectIdTryResult match {
-          case Success(objectId) => userRepository.update(objectId, user).map(result => Ok(Json.toJson(result.ok)))
-          case Failure(_) => Future.successful(BadRequest("Cannot parse the provided user ID"))
-        }
-      }
-    )
-  }
-
-  def delete(id: String): Action[JsValue] = Action.async(controllerComponents.parsers.json) { implicit request =>
-    val objectIdTryResult = BSONObjectID.parse(id)
-    objectIdTryResult match {
-      case Success(objectId) => userRepository.delete(objectId).map(_ => NoContent)
-      case Failure(_) => Future.successful(BadRequest("Cannot parse the provided user ID"))
-    }
-  }
 }

@@ -1,6 +1,6 @@
 package controllers.security
 
-import models.CustomSession
+import models.{User, CustomSession}
 import play.api.i18n.MessagesApi
 import play.api.mvc.Security.{AuthenticatedBuilder, AuthenticatedRequest}
 import play.api.mvc._
@@ -8,11 +8,11 @@ import play.api.mvc._
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthMessagesRequest[A](val customSession: CustomSession, messagesApi: MessagesApi, request: Request[A]) extends MessagesRequest[A](request, messagesApi)
+class AuthMessagesRequest[A](val user: User, messagesApi: MessagesApi, request: Request[A]) extends MessagesRequest[A](request, messagesApi)
 
 class AuthenticatedActionBuilder(val parser: BodyParser[AnyContent],
                                  messagesApi: MessagesApi,
-                                 builder: AuthenticatedBuilder[CustomSession])
+                                 builder: AuthenticatedBuilder[User])
                                 (implicit val executionContext: ExecutionContext)
   extends ActionBuilder[AuthMessagesRequest, AnyContent] {
 
@@ -24,7 +24,7 @@ class AuthenticatedActionBuilder(val parser: BodyParser[AnyContent],
   }
 
   override def invokeBlock[A](request: Request[A], block: AuthMessagesRequest[A] => Future[Result]): Future[Result] = {
-    builder.authenticate(request, { authRequest: AuthenticatedRequest[A, CustomSession] =>
+    builder.authenticate(request, { authRequest: AuthenticatedRequest[A, User] =>
       block(new AuthMessagesRequest[A](authRequest.user, messagesApi, request))
     })
   }

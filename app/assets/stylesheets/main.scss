@@ -1,0 +1,9 @@
+$primary: #8C68CD;
+$secondary: #C5B3E6;
+$success: #8C68CD;
+$info: #8540F5;
+$warning: #E0CFFC;
+body {padding-top: 56px}
+input:valid {color: $success}
+input:invalid {color: $warning}
+@import "lib/bootstrap/scss/bootstrap";
