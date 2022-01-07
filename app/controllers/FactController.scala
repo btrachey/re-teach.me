@@ -8,6 +8,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import reactivemongo.api.bson.BSONObjectID
 import repositories.{FactRepository, UnapprovedFactRepository}
+import play.api.Logging
 
 import javax.inject._
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,7 +21,7 @@ class FactController @Inject()(
                                 val unapprovedFactRepository: UnapprovedFactRepository,
                                 val cc: MessagesControllerComponents,
                                 val authenticatedAction: AuthenticatedActionBuilder
-                              ) extends MessagesAbstractController(cc) {
+                              ) extends MessagesAbstractController(cc) with Logging {
 
   val yearFormSingle: Form[Int] = Form(
     single(
@@ -30,7 +31,8 @@ class FactController @Inject()(
   val factCreateForm: Form[FactCreateForm] = Form(
     mapping(
       "Title" -> text,
-      "Description" -> text
+      "Description" -> text,
+      "References" -> seq(text)
     )(FactCreateForm.apply)(FactCreateForm.unapply)
   )
 
@@ -63,7 +65,9 @@ class FactController @Inject()(
         factCreateForm.bindFromRequest().fold(
           errorForm => Future.successful(BadRequest(views.html.factcreate(errorForm))),
           formData => {
-            val fact = Fact(formData)
+            val referencesWithIndex = formData.references.zipWithIndex
+            val references: Map[String, String] = referencesWithIndex.map(tup => (tup._2 + 1).toString -> tup._1).toMap
+            val fact = Fact.fromForm(formData, references)
             val createFact = unapprovedFactRepository.create(fact)
             Future.successful(Redirect(routes.FactController.singleFact(fact._id.get.stringify, isUnapprovedFact = true)).flashing("newFact" -> "fact created"))
           }

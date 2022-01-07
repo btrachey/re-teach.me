@@ -8,5 +8,5 @@ package object models {
   }
   case class UserCreationForm(email: String, password: String, firstName: String, middleName: Option[String], lastName: String)
   case class LoginForm(email: String, password: String)
-  case class FactCreateForm(title: String, description: String)
+  case class FactCreateForm(title: String, description: String, references: Seq[String])
 }
