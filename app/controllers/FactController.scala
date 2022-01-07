@@ -7,7 +7,7 @@ import play.api.data.Forms._
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import reactivemongo.api.bson.BSONObjectID
-import repositories.{FactRepository, UnapprovedFactRepository}
+import repositories.{FactRepository, UnapprovedFactRepository, UserRepository}
 import play.api.Logging
 
 import javax.inject._
@@ -61,18 +61,18 @@ class FactController @Inject()(
     request.user.role match {
       case "Generic" =>
         Future.successful(Ok(views.html.notauthorized()))
-      case _ => {
+      case _ =>
         factCreateForm.bindFromRequest().fold(
           errorForm => Future.successful(BadRequest(views.html.factcreate(errorForm))),
           formData => {
             val referencesWithIndex = formData.references.zipWithIndex
             val references: Map[String, String] = referencesWithIndex.map(tup => (tup._2 + 1).toString -> tup._1).toMap
-            val fact = Fact.fromForm(formData, references)
+            val fact = Fact.fromForm(formData, references, request.user)
             val createFact = unapprovedFactRepository.create(fact)
             Future.successful(Redirect(routes.FactController.singleFact(fact._id.get.stringify, isUnapprovedFact = true)).flashing("newFact" -> "fact created"))
           }
         )
-      }
+
     }
   }
 
