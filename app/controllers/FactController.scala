@@ -1,15 +1,16 @@
 package controllers
 
-import controllers.security.AuthenticatedActionBuilder
+import controllers.security.{AuthMessagesRequest, AuthenticatedActionBuilder}
 import models.{Fact, FactCreateForm}
+import play.api.Logging
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
 import play.api.mvc._
 import reactivemongo.api.bson.BSONObjectID
-import repositories.{FactRepository, UnapprovedFactRepository, UserRepository}
-import play.api.Logging
+import repositories.{FactRepository, UnapprovedFactRepository}
 
+import java.time.LocalDate
 import javax.inject._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -23,6 +24,7 @@ class FactController @Inject()(
                                 val authenticatedAction: AuthenticatedActionBuilder
                               ) extends MessagesAbstractController(cc) with Logging {
 
+  val currentYear: Int = LocalDate.now.getYear
   val yearFormSingle: Form[Int] = Form(
     single(
       "Year" -> number
@@ -30,6 +32,7 @@ class FactController @Inject()(
   )
   val factCreateForm: Form[FactCreateForm] = Form(
     mapping(
+      "Year" -> number(min = 1900, max = currentYear),
       "Title" -> text,
       "Description" -> text,
       "References" -> seq(text)
@@ -59,8 +62,7 @@ class FactController @Inject()(
 
   def formCreate: Action[AnyContent] = authenticatedAction.async { implicit request =>
     request.user.role match {
-      case "Generic" =>
-        Future.successful(Ok(views.html.notauthorized()))
+      case "Generic" => unauthorized
       case _ =>
         factCreateForm.bindFromRequest().fold(
           errorForm => Future.successful(BadRequest(views.html.factcreate(errorForm))),
@@ -68,8 +70,11 @@ class FactController @Inject()(
             val referencesWithIndex = formData.references.zipWithIndex
             val references: Map[String, String] = referencesWithIndex.map(tup => (tup._2 + 1).toString -> tup._1).toMap
             val fact = Fact.fromForm(formData, references, request.user)
-            val createFact = unapprovedFactRepository.create(fact)
-            Future.successful(Redirect(routes.FactController.singleFact(fact._id.get.stringify, isUnapprovedFact = true)).flashing("newFact" -> "fact created"))
+            for {
+              _ <- unapprovedFactRepository.create(fact)
+            } yield
+              Redirect(routes.FactController.singleFact(fact._id.get.stringify, isUnapprovedFact = true))
+                .flashing("newFact" -> "fact created")
           }
         )
 
@@ -84,17 +89,49 @@ class FactController @Inject()(
     yearFormSingle.bindFromRequest().fold(
       errorForm => Future.successful(Ok(views.html.factindex(errorForm))),
       year => {
-        val allFacts = factRepository.findAll()
-        allFacts.map(facts => Ok(views.html.factdisplay(year, facts)))
+        for {
+          facts <- factRepository.findGTEYear(year)
+        } yield Ok(views.html.factdisplay(year, facts))
       }
     )
   }
 
-  def singleFact(id: String, isUnapprovedFact: Boolean = false): Action[AnyContent] = authenticatedAction.async { implicit request =>
+  def singleFact(id: String,
+                 isUnapprovedFact: Boolean = false
+                ): Action[AnyContent] = authenticatedAction.async { implicit request =>
     val singleFact = BSONObjectID.parse(id) match {
-      case Success(id) => if (isUnapprovedFact) {unapprovedFactRepository.findOne(id)} else factRepository.findOne(id)
+      case Success(id) => if (isUnapprovedFact) {
+        unapprovedFactRepository.findOne(id)
+      } else factRepository.findOne(id)
       case _ => Future.successful(Option.empty[Fact])
     }
     singleFact.map(_.map(fact => Ok(views.html.singlefactdisplay(fact))).getOrElse(Ok(views.html.index())))
   }
+
+  def approveFactView: Action[AnyContent] = authenticatedAction.async { implicit request =>
+    request.user.role match {
+      case "Generic" | "Contributor" => unauthorized
+      case "Reviewer" | "Admin" =>
+        for {
+          unapprovedFacts <- unapprovedFactRepository.findAll()
+        } yield Ok(views.html.factapprove(unapprovedFacts))
+    }
+  }
+
+  def approveFact(id: String): Action[AnyContent] = authenticatedAction.async { implicit request =>
+    request.user.role match {
+      case "Generic" | "Contributor" => unauthorized
+      case "Reviewer" | "Admin" => {
+        val bsonId = BSONObjectID.parse(id)
+        bsonId match {
+          case Success(bid) => for {
+            _ <- unapprovedFactRepository.approveFact(bid, request.user)
+          } yield Redirect(routes.FactController.approveFactView).flashing("factApproved" -> "Fact Approved")
+          case Failure(e) => Future.successful(Redirect(routes.FactController.approveFactView).flashing("factFailed" -> "Failed to Approve Fact"))
+        }
+      }
+    }
+  }
+
+  def unauthorized(implicit request: AuthMessagesRequest[AnyContent]): Future[Result] = Future.successful(Ok(views.html.notauthorized()))
 }

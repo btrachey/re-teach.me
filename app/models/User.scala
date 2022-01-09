@@ -105,7 +105,7 @@ object User extends HasBSONObjectID {
 
   object UserRole extends Enumeration {
     val Generic = "Generic"
-    val Contributor = "Contrbutor"
+    val Contributor = "Contributor"
     val Reviewer = "Reviewer"
     val Admin = "Admin"
   }

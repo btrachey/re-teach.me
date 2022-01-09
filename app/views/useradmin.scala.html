@@ -1,0 +1,43 @@
+@import controllers.security.AuthMessagesRequest
+@(users: Seq[User])(implicit request: AuthMessagesRequest[AnyContent])
+
+@main("Update Your Knowledge") {
+    @if(request.flash.get("updateFailed").isDefined) {
+        <div class="container-fluid fixed-top">
+            <div class="row justify-content-center">
+                <div class="alert alert-success alert-dismissible col-2" role="alert">
+                    @request.flash.get("updateFailed")
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"> </button>
+                </div>
+            </div>
+        </div>
+    }
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col">
+                <h4 class="display-4 text-center">User Administration</h4>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-4">
+                <ul class="list-group text-center">
+                @for(user <- users) {
+                    <li class="list-group-item">
+                        <h5 class="mb-3">@user.firstName.get @user.lastName.get: @user.email.get</h5>
+                        <div class="btn-group btn-group-sm">
+                            <a class="btn disabled btn-outline-primary" role="button">Change Role:</a>
+                            @for(role <- Seq("Contributor", "Reviewer", "Admin")) {
+                                @if(role == user.role) {
+                                    <a href="@routes.UserController.setRole(user._id.get.stringify, role)" class="btn btn-success active" role="button">@role</a>
+                                } else {
+                                    <a href="@routes.UserController.setRole(user._id.get.stringify, role)" class="btn btn-secondary" role="button">@role</a>
+                                }
+                            }
+                        </div>
+                    </li>
+                }
+                </ul>
+            </div>
+        </div>
+    </div>
+}

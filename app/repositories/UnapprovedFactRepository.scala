@@ -1,6 +1,6 @@
 package repositories
 
-import models.Fact
+import models.{Fact, User}
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.bson.collection.BSONCollection
 import reactivemongo.api.bson.compat._
@@ -13,7 +13,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class UnapprovedFactRepository @Inject()(
                                 implicit executionContext: ExecutionContext,
-                                reactiveMongoApi: ReactiveMongoApi
+                                reactiveMongoApi: ReactiveMongoApi,
+                                factRepository: FactRepository
                               ) extends GenericRepository[Fact] {
 
   override def collection: Future[BSONCollection] = reactiveMongoApi.database.map(db => db.collection("unapprovedFacts"))
@@ -25,5 +26,12 @@ class UnapprovedFactRepository @Inject()(
   override def update(id: BSONObjectID, fact: Fact): Future[WriteResult] = collection
     .flatMap(_.update(ordered = false)
       .one(BSONDocument("_id" -> id), fact.copy(_updateDate = Some(Instant.now))))
+
+  def approveFact(id: BSONObjectID, approver: User): Future[WriteResult] =
+    for {
+      unapprovedFact <- findOne(id)
+      writeResult <- factRepository.create(unapprovedFact.get.copy(approver = Some(approver)))
+      _ <- delete(unapprovedFact.get._id.get)
+    } yield writeResult
 
 }

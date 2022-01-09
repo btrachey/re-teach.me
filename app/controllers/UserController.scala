@@ -4,7 +4,7 @@ import controllers.security.AuthenticatedActionBuilder
 import models.{CustomSession, LoginForm, User, UserCreationForm}
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
 import play.api.mvc._
 import reactivemongo.api.bson.BSONObjectID
 import repositories.{SessionRepository, UserRepository}
@@ -98,7 +98,7 @@ class UserController @Inject()(
     }
   }
 
-  def findOne(id: String): Action[AnyContent] = authenticatedAction.async { implicit request: Request[AnyContent] =>
+  def findOne(id: String): Action[AnyContent] = authenticatedAction.async { implicit request =>
     val objectIdTryResult = BSONObjectID.parse(id)
     objectIdTryResult match {
       case Success(objectId) => userRepository.findOne(objectId).map(user => Ok(Json.toJson(user)))
@@ -106,4 +106,28 @@ class UserController @Inject()(
     }
   }
 
+  def userAdmin(): Action[AnyContent]= authenticatedAction.async { implicit request =>
+    request.user.role match {
+      case "Admin" => for {
+        allUsers <- userRepository.findAll()
+      } yield Ok(views.html.useradmin(allUsers))
+      case _ => Future.successful(Ok(views.html.notauthorized()))
+    }
+  }
+
+  def setRole(id: String, updatedRole: String): Action[AnyContent] = authenticatedAction.async { implicit request =>
+    request.user.role match {
+      case "Admin" =>
+        val bsonId = BSONObjectID.parse(id)
+        bsonId match {
+          case Success(bid) => for {
+            user <- userRepository.findOne(bid)
+            _ <- userRepository.update(bid, user.get.copy(role = updatedRole))
+          } yield Redirect(routes.UserController.userAdmin())
+          case Failure(e) => Future.successful(Redirect(routes.UserController.userAdmin()).flashing("updateFailed" -> "Role Update Failed"))
+        }
+
+      case _ => Future.successful(Ok(views.html.notauthorized()))
+    }
+  }
 }

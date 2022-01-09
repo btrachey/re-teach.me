@@ -6,6 +6,7 @@ import reactivemongo.api.bson.collection.BSONCollection
 import reactivemongo.api.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.api.bson.compat._
 import reactivemongo.api.commands.WriteResult
+import reactivemongo.api.{Cursor, ReadPreference}
 
 import java.time.Instant
 import javax.inject._
@@ -25,5 +26,10 @@ class FactRepository @Inject()(
   override def update(id: BSONObjectID, fact: Fact): Future[WriteResult] = collection
     .flatMap(_.update(ordered = false)
       .one(BSONDocument("_id" -> id), fact.copy(_updateDate = Some(Instant.now))))
+
+  def findGTEYear(year: Int): Future[Seq[Fact]] = collection
+    .flatMap(_.find(BSONDocument("year" -> BSONDocument("$gte" -> year)), Option.empty[Fact])
+      .cursor[Fact](ReadPreference.Primary)
+      .collect[Seq](100, Cursor.FailOnError[Seq[Fact]]()))
 
 }

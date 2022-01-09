@@ -1,25 +1,25 @@
+@import controllers.security.AuthMessagesRequest
 @import helper._
 @import models.UserCreationForm
-@import controllers.security.AuthMessagesRequest
 @(userForm: Form[UserCreationForm])(implicit request: AuthMessagesRequest[AnyContent])
 
-@main("Update Your Knowledge") {
-  <div class="container-fluid">
-    <div class="row justify-content-center">
-      <div class="col-4">
-  <h1>Create New User</h1>
-  @form(action = routes.UserController.newUserPost) {
-    @inputText(userForm("Email"),Symbol("_showConstraints") -> false, Symbol("class") -> "form-control")
-    @inputPassword(userForm("Password"), Symbol("class") -> "form-control")
-    @inputText(userForm("First Name"), Symbol("class") -> "form-control")
-    @inputText(userForm("Middle Name"), Symbol("class") -> "form-control")
-    @inputText(userForm("Last Name"), Symbol("class") -> "form-control")
-    @CSRF.formField
-    <div class="buttons">
-      <input type="submit" class="btn btn-primary text-white" value="Register">
-    </div>
-  }
-  </div>
-    </div>
-  </div>
-}
+    @main("Update Your Knowledge") {
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-4">
+                    <h1>Create New User</h1>
+                    @form(action = routes.UserController.newUserPost) {
+                        @inputText(userForm("Email"), Symbol("_showConstraints") -> false, Symbol("class") -> "form-control")
+                        @inputPassword(userForm("Password"), Symbol("class") -> "form-control")
+                        @inputText(userForm("First Name"), Symbol("class") -> "form-control")
+                        @inputText(userForm("Middle Name"), Symbol("class") -> "form-control")
+                        @inputText(userForm("Last Name"), Symbol("class") -> "form-control")
+                        @CSRF.formField
+                        <div class="buttons">
+                            <input type="submit" class="btn btn-primary text-white" value="Register">
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }

@@ -7,7 +7,7 @@
             <div class="col"></div>
             <div class="col-8">
                 <div class="container-fluid p-2">
-                    <h1 class="text-center">Updated information since @year</h1>
+                    <h3 class="text-center display-3">Updated information since @year</h3>
                 </div>
                 <div class="accordion" id="accordionExample">
                 @for((fact, number) <- facts.zip(1 to facts.length)) {
@@ -20,7 +20,7 @@
                         <div id="collapse@number" class="accordion-collapse collapse" aria-labelledby="heading@number" data-bs-parent="#accordionExample">
                             <div class="accordion-body">
                                 <p class="fact_description">@fact.description</p>
-                                @if(fact.references.isDefined) {
+                                @if(fact.references.isDefined && fact.references.get.nonEmpty) {
                                     <hr class="dropdown-divider">
                                     @for(ref <- fact.references.get) {
                                         <p>@ref._1 <a href="@ref._2">@ref._2</a></p>

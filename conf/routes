@@ -4,26 +4,27 @@
 # ~~~~
 
 # Strip trailing slashes
-GET           /*path/                controllers.HomeController.untrail(path)
+GET         /*path/                     controllers.HomeController.untrail(path)
 # An example controller showing a sample home page
-GET           /                      controllers.HomeController.index
+GET         /                           controllers.HomeController.index
 # Map static resources from the /public folder to the /assets URL path
-GET           /assets/*file          controllers.Assets.versioned(path="/public", file: Asset)
+GET         /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
 # facts routes
-GET           /facts                 controllers.FactController.index
-GET           /facts/create          controllers.FactController.createPage
-POST          /facts/create          controllers.FactController.formCreate
-GET           /facts/byYear          controllers.FactController.byYear
-GET           /facts/all             controllers.FactController.findAll
-GET           /facts/:id             controllers.FactController.findOne(id: String)
-GET           /facts/view/:id        controllers.FactController.singleFact(id: String, isUnapprovedFact: Boolean)
+GET         /facts                      controllers.FactController.index
+GET         /facts/create               controllers.FactController.createPage
+POST        /facts/create               controllers.FactController.formCreate
+GET         /facts/byYear               controllers.FactController.byYear
+GET         /facts/all                  controllers.FactController.findAll
+GET         /facts/approve              controllers.FactController.approveFactView
+GET         /facts/approve/:id          controllers.FactController.approveFact(id: String)
+GET         /facts/:id                  controllers.FactController.findOne(id: String)
+GET         /facts/view/:id             controllers.FactController.singleFact(id: String, isUnapprovedFact: Boolean)
 # user routes
-GET           /users                 controllers.UserController.newUser
-POST          /users                 controllers.UserController.newUserPost
-GET           /users/login           controllers.UserController.login
-POST          /users/login           controllers.UserController.loginPost
+GET         /users                      controllers.UserController.newUser
+POST        /users                      controllers.UserController.newUserPost
+GET         /users/login                controllers.UserController.login
+POST        /users/login                controllers.UserController.loginPost
+GET         /users/admin                controllers.UserController.userAdmin()
+GET         /users/admin/setrole        controllers.UserController.setRole(id, rolename)
 # force favicon
-GET           /favicon.ico           controllers.Assets.at(path="/public/images", file="favicon.png")
-# testing authentication
-#GET /priv controllers.HomeController.priv()
-# redirect all un-implemented URIs to index
+GET         /favicon.ico                controllers.Assets.at(path="/public/images", file="favicon.png")

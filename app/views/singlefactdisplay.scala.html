@@ -2,37 +2,42 @@
 @(fact: Fact)(implicit request: AuthMessagesRequest[AnyContent])
 
 @main("Update Your Knowledge") {
-    <h1>@fact.title</h1>
-    <p>@fact.description</p>
-    @for(ref <- fact.references.get) {
-        <p>@ref._1</p>
-        <p>@ref._2</p>
-    }
-    @if(request.flash.get("newFact").isDefined){
-        <p>This is a preview of your newly created fact. It will now go up for review, and if approved, will appear on the site.</p>
-    }
     <div class="container-fluid">
         <div class="row justify-content-center">
             <div class="col-8">
+                <figure class="text-center">
+                    <h3 class="display-3">
+                        Review/Edit a Fact
+                    </h3>
+                    @if(request.flash.get("newFact").isDefined) {
+                        <p>This is a preview of your newly created fact. It will now go up for review, and if approved, will appear on the site.</p>
+                    }
+                </figure>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-8">
                 <div class="accordion" id="factAccordion">
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse" aria-controls="collapse">
-                            <strong>@fact.title</strong>
-                        </button>
-                    </h2>
-                    <div id="collapse" class="accordion-collapse collapse" aria-labelledby="heading" data-bs-parent="factAccordion">
-                        <div class="accordion-body">
-                            <p class="fact_description">@fact.description</p>
-                            <hr class="dropdown-divider">
-                            @for(ref <- fact.references.get) {
-                                <p>@ref._1 <a href="@ref._2">@ref._2</a> </p>
-                            }
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse" aria-controls="collapse">
+                                <strong>@fact.title</strong>
+                            </button>
+                        </h2>
+                        <div id="collapse" class="accordion-collapse collapse" aria-labelledby="heading" data-bs-parent="factAccordion">
+                            <div class="accordion-body">
+                                <p class="fact_description">@fact.description</p>
+                                @if(fact.references.isDefined && fact.references.get.nonEmpty) {
+                                    <hr class="dropdown-divider">
+                                    @for(ref <- fact.references.get) {
+                                        <p>@ref._1 <a href="@ref._2">@ref._2</a> </p>
+                                    }
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
         </div>
     </div>
     <script src="@routes.Assets.versioned("javascripts/fact_description_display.js")" type="text/javascript"></script>
