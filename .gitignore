@@ -7,6 +7,10 @@ target
 /.project
 /.settings
 /RUNNING_PID
+# Metals
+.bloop
+.metals
+**/metals.sbt
 # SDKMan Config File
 .sdkmanrc
 
